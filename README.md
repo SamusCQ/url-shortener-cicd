@@ -1,8 +1,8 @@
 # 🔗 URL Shortener — Proyecto CI/CD
 
-[![CI/CD](https://github.com/TU_USUARIO/TU_REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/TU_USUARIO/TU_REPO/actions/workflows/ci.yml)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=TU_ORG_url-shortener&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=TU_ORG_url-shortener)
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=TU_ORG_url-shortener&metric=coverage)](https://sonarcloud.io/summary/new_code?id=TU_ORG_url-shortener)
+[![CI/CD](https://github.com/SamusCQ/url-shortener-cicd/actions/workflows/ci.yml/badge.svg)](https://github.com/SamusCQ/url-shortener-cicd/actions/workflows/ci.yml)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=SamusCQ_url-shortener-cicd&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=SamusCQ_url-shortener-cicd)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=SamusCQ_url-shortener-cicd&metric=coverage)](https://sonarcloud.io/summary/new_code?id=SamusCQ_url-shortener-cicd)
 
 Acortador de URLs construido para demostrar un **flujo CI/CD completo** con GitHub Actions,
 Docker, SonarCloud y publicación de imágenes en GitHub Container Registry (ghcr.io).
@@ -91,4 +91,6 @@ falla, el pipeline falla → despliegue verificado automáticamente.
 2. **ghcr.io**: no requiere secretos extra; usa el `GITHUB_TOKEN` automático.
 3. **Branch protection** (recomendado): en *Settings → Branches* protege `main` exigiendo
    que el workflow CI/CD pase antes de hacer merge.
-4. Reemplaza `TU_USUARIO/TU_REPO` y `TU_ORG` en los badges de este README.
+4. Los badges ya apuntan a `SamusCQ/url-shortener-cicd`. Si SonarCloud te asigna una
+   `organization` o `projectKey` distintos al crear el proyecto, ajústalos en los badges
+   de arriba y en [`sonar-project.properties`](sonar-project.properties).
