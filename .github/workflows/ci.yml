@@ -1,0 +1,151 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # 1) Instalar, lint y pruebas con cobertura (contra una BD PostgreSQL real)
+  build-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: urlshortener
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/urlshortener
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+
+      - name: Subir reporte de cobertura
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/lcov.info
+
+  # 2) Análisis de calidad con SonarCloud (bloquea si no pasa el Quality Gate)
+  sonarcloud:
+    needs: build-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Sonar necesita el historial completo
+
+      - name: Descargar cobertura
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage
+          path: coverage
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
+
+  # 3) Construir y publicar la imagen Docker en ghcr.io (solo en main)
+  docker:
+    needs: sonarcloud
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login en GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Metadatos de la imagen
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=latest
+            type=sha
+
+      - name: Build & Push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  # 4) Desplegar la imagen publicada y verificarla con un smoke test
+  deploy-smoke:
+    needs: docker
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Calcular nombre de la imagen
+        run: |
+          REPO=$(echo "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')
+          echo "APP_IMAGE=ghcr.io/${REPO}:sha-${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+
+      - name: Login en ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Levantar servicios
+        run: docker compose -f docker-compose.deploy.yml up -d
+
+      - name: Esperar a que la app responda
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3000/health; then
+              echo "App lista"; exit 0
+            fi
+            sleep 2
+          done
+          echo "La app no respondió a tiempo"
+          docker compose -f docker-compose.deploy.yml logs
+          exit 1
+
+      - name: Smoke test (acortar + redirigir)
+        run: |
+          CODE=$(curl -sf -X POST http://localhost:3000/api/urls \
+            -H "Content-Type: application/json" \
+            -d '{"url":"https://example.com"}' \
+            | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d).shortCode))")
+          echo "Código generado: $CODE"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:3000/$CODE")
+          echo "Status de la redirección: $STATUS"
+          test "$STATUS" = "301"
+
+      - name: Apagar servicios
+        if: always()
+        run: docker compose -f docker-compose.deploy.yml down

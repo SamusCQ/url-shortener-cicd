@@ -1,0 +1,28 @@
+# Compose usado por el job "deploy-smoke" del pipeline.
+# En lugar de construir la imagen, descarga la ya publicada en ghcr.io
+# (variable APP_IMAGE) y la levanta junto a una base de datos limpia.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: urlshortener
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    image: ${APP_IMAGE}
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/urlshortener
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
