@@ -5,11 +5,17 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:   # permite lanzarlo a mano desde la pestaña Actions
 
 jobs:
   # 1) Instalar, lint y pruebas con cobertura (contra una BD PostgreSQL real)
   build-test:
     runs-on: ubuntu-latest
+    # Expone si el secreto SONAR_TOKEN está configurado, para decidir si corre Sonar.
+    # (El contexto `secrets` no se puede usar en el `if` de un job, por eso se pasa
+    #  como salida de este job.)
+    outputs:
+      sonar_enabled: ${{ steps.cfg.outputs.sonar_enabled }}
     services:
       postgres:
         image: postgres:16-alpine
@@ -29,6 +35,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: ¿Hay SONAR_TOKEN configurado?
+        id: cfg
+        run: echo "sonar_enabled=${{ secrets.SONAR_TOKEN != '' }}" >> "$GITHUB_OUTPUT"
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -47,6 +57,8 @@ jobs:
   # 2) Análisis de calidad con SonarCloud (bloquea si no pasa el Quality Gate)
   sonarcloud:
     needs: build-test
+    # Solo corre si el secreto SONAR_TOKEN existe; si no, se salta (no falla el pipeline).
+    if: needs.build-test.outputs.sonar_enabled == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -67,8 +79,14 @@ jobs:
 
   # 3) Construir y publicar la imagen Docker en ghcr.io (solo en main)
   docker:
-    needs: sonarcloud
-    if: github.ref == 'refs/heads/main'
+    needs: [ build-test, sonarcloud ]
+    # En main, siempre que build-test pase y sonar haya pasado O se haya saltado
+    # (porque aún no hay token). Si sonar FALLA, no se publica la imagen.
+    if: >-
+      always() &&
+      github.ref == 'refs/heads/main' &&
+      needs.build-test.result == 'success' &&
+      (needs.sonarcloud.result == 'success' || needs.sonarcloud.result == 'skipped')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -103,7 +121,7 @@ jobs:
   # 4) Desplegar la imagen publicada y verificarla con un smoke test
   deploy-smoke:
     needs: docker
-    if: github.ref == 'refs/heads/main'
+    if: always() && needs.docker.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
