@@ -7,6 +7,7 @@ const urlsRouter = require('./routes/urls');
 const redirectRouter = require('./routes/redirect');
 
 const app = express();
+app.disable('x-powered-by'); // No revelar la tecnología del servidor (SonarCloud S5689)
 app.use(express.json());
 
 app.use('/health', healthRouter);
