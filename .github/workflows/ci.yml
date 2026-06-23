@@ -7,6 +7,12 @@ on:
     branches: [ main ]
   workflow_dispatch:   # permite lanzarlo a mano desde la pestaña Actions
 
+# Si se sube algo nuevo mientras un run sigue en curso para la misma rama,
+# se cancela el anterior. Evita gastar minutos en ejecuciones obsoletas.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # 1) Instalar, lint y pruebas con cobertura (contra una BD PostgreSQL real)
   build-test:
@@ -41,7 +47,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - run: npm ci
