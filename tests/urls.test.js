@@ -21,6 +21,17 @@ describe('API de URLs', () => {
     expect(res.body.shortUrl).toContain(res.body.shortCode);
   });
 
+  it('lista todos los enlaces creados (200)', async () => {
+    await request(app).post('/api/urls').send({ url: 'https://nodejs.org' });
+
+    const res = await request(app).get('/api/urls');
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBeGreaterThan(0);
+    expect(res.body[0]).toHaveProperty('shortCode');
+    expect(res.body[0]).toHaveProperty('clicks');
+  });
+
   it('rechaza una URL inválida (400)', async () => {
     const res = await request(app)
       .post('/api/urls')

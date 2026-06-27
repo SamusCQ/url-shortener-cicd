@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LinkSnap — Acortador de enlaces</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Orbes de fondo animados -->
+  <div class="bg-orbs" aria-hidden="true">
+    <span class="orb orb-1"></span>
+    <span class="orb orb-2"></span>
+    <span class="orb orb-3"></span>
+  </div>
+
+  <main class="card">
+    <div class="brand">
+      <span class="logo">🔗</span>
+      <span class="brand-name">LinkSnap</span>
+    </div>
+
+    <!-- Pestañas -->
+    <div class="tabs" role="tablist">
+      <button id="tab-create" class="tab active" role="tab" aria-selected="true" data-panel="panel-create">
+        Acortar
+      </button>
+      <button id="tab-links" class="tab" role="tab" aria-selected="false" data-panel="panel-links">
+        Mis enlaces
+      </button>
+    </div>
+
+    <!-- Panel: Acortar -->
+    <section id="panel-create" class="panel">
+      <h1>Acorta tus enlaces<br />en un instante</h1>
+      <p class="subtitle">Pega una URL larga y obtén una versión corta, lista para compartir.</p>
+
+      <form id="form" autocomplete="off">
+        <div class="field">
+          <svg class="field-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M9 15l6-6M10.5 6.5l1-1a4.95 4.95 0 017 7l-1 1M13.5 17.5l-1 1a4.95 4.95 0 01-7-7l1-1"
+              stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <input
+            id="url"
+            type="text"
+            inputmode="url"
+            placeholder="https://ejemplo.com/una/direccion/muy/larga"
+            aria-label="URL a acortar"
+            required
+          />
+        </div>
+        <button id="submit" type="submit">
+          <span class="btn-label">Acortar</span>
+          <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
+      </form>
+
+      <p id="error" class="error" hidden></p>
+
+      <div id="result" class="result" hidden>
+        <span class="result-label">✨ Tu enlace corto</span>
+        <div class="result-row">
+          <a id="shortUrl" class="short-url" href="#" target="_blank" rel="noopener"></a>
+          <button id="copy" type="button" class="copy-btn" title="Copiar">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" class="copy-icon">
+              <rect x="9" y="9" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.8" />
+              <path d="M5 15V5a2 2 0 012-2h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            </svg>
+            <span class="copy-text">Copiar</span>
+          </button>
+        </div>
+        <p id="meta" class="meta"></p>
+      </div>
+
+      <ul class="chips" aria-label="Características">
+        <li>⚡ Redirección 301</li>
+        <li>📊 Conteo de clics</li>
+        <li>🧩 API REST</li>
+      </ul>
+    </section>
+
+    <!-- Panel: Mis enlaces -->
+    <section id="panel-links" class="panel" hidden>
+      <div class="panel-head">
+        <h1>Mis enlaces</h1>
+        <button id="refresh" type="button" class="refresh-btn" title="Actualizar contadores">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" class="refresh-icon">
+            <path d="M4 12a8 8 0 0114-5.3L20 8M20 4v4h-4M20 12a8 8 0 01-14 5.3L4 16M4 20v-4h4"
+              stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          Actualizar
+        </button>
+      </div>
+      <p class="subtitle">Todos los enlaces creados, con su número de visitas.</p>
+
+      <ul id="links-list" class="links-list"></ul>
+      <p id="links-empty" class="links-empty" hidden>Aún no hay enlaces. Crea uno en la pestaña «Acortar».</p>
+    </section>
+
+    <footer class="footer">
+      <a href="/api-docs" target="_blank" rel="noopener">Documentación de la API (Swagger) →</a>
+    </footer>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

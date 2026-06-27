@@ -31,7 +31,8 @@
     ],
     "coveragePathIgnorePatterns": [
       "src/server.js",
-      "src/openapi.json"
+      "src/openapi.json",
+      "src/public/"
     ],
     "coverageReporters": [
       "text",

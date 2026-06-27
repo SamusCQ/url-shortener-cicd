@@ -1,3 +1,4 @@
+const path = require('path');
 const express = require('express');
 const swaggerUi = require('swagger-ui-express');
 const openapi = require('./openapi.json');
@@ -9,6 +10,11 @@ const redirectRouter = require('./routes/redirect');
 const app = express();
 app.disable('x-powered-by'); // No revelar la tecnología del servidor (SonarCloud S5689)
 app.use(express.json());
+
+// Frontend estático: sirve la página web desde src/public (index.html en "/").
+// Va antes del router de redirección para que "/" muestre la interfaz; las rutas
+// que no sean un archivo (p. ej. "/abc123") caen al router de redirección.
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/health', healthRouter);
 app.use('/api/urls', urlsRouter);
