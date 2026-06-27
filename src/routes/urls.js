@@ -24,6 +24,25 @@ router.post('/', async (req, res, next) => {
   }
 });
 
+// GET /api/urls -> lista todos los enlaces (más recientes primero).
+router.get('/', async (req, res, next) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT short_code, original_url, clicks, created_at FROM urls ORDER BY created_at DESC LIMIT 100'
+    );
+    return res.json(
+      rows.map((r) => ({
+        shortCode: r.short_code,
+        originalUrl: r.original_url,
+        clicks: r.clicks,
+        createdAt: r.created_at,
+      }))
+    );
+  } catch (err) {
+    return next(err);
+  }
+});
+
 // GET /api/urls/:shortCode -> metadatos (URL original, clics, fecha).
 router.get('/:shortCode', async (req, res, next) => {
   try {

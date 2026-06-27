@@ -3,3 +3,7 @@ coverage
 .env
 .scannerwork
 *.log
+
+# Documentación de entrega (no es código, no se sube al repo)
+*.docx
+*.pdf
